@@ -11,10 +11,59 @@
  * into the main file of your project. */
 #include "peripherals.h"
 
+#define CALADC12_15V_30C  *((unsigned int *)0x1A1A)
+#define CALADC12_15V_85C  *((unsigned int *)0x1A1C)
+
 // Function Prototypes
 void swDelay(char numLoops);
 
-// Declare globals here
+//Global Variables
+unsigned long int timer;
+char CircIndex = 255;
+unsigned int currentTemp = 0;
+unsigned int swVolt = 0;
+unsigned int tempArray[256];
+unsigned int scrollArray[256];
+int CheckADC = -1;
+volatile float temperatureDegC;
+
+#pragma vector = TIMER2_A0_VECTOR
+
+__interrupt void A2_ISRs() {
+    timer++;
+    CircIndex++;
+    ADC12CTL0 |= ADC12ENC | ADC12SC;
+}
+void A2_timer() {
+    TA2CTL = TASSEL_1 + ID_0 + MC_1;
+    TA2CCR0 = 32767;   //it means we have 80 periods of 32 Khz each
+    TA2CCTL0 = CCIE;
+}
+
+#pragma vector=ADC12_VECTOR
+__interrupt void ADC12_ISR()
+{
+    currentTemp = ADC12MEM0;
+    swVoltage = ADC12MEM1;
+    CheckADC = 1;
+}
+
+while(1) {
+    if (sample == 1) {
+        tempArray[circIndex] = currentTemp;
+        ScrollArray[circIndex] = swVolt;
+        sample = 0;
+        if (circIndex == 255) {
+            int average = tempArray[251] + tempArray[252] + tempArray[253] + tempArray[254] + tempArray[255];
+        }
+        temperatureDegC = (float)((long)in_temp - CALADC12_15V_30C) * degC_per_bit +30.0;
+
+        Graphics_clearDisplay(&g_sContext);
+        Graphics_drawStringCentered(&g_sContext, "HI", AUTO_STRING_LENGTH, 48, 35, TRANSPARENT_TEXT);
+        Graphics_flushBuffer(&g_sContext);
+    }
+}
+
 
 // Main
 void main(void)
@@ -123,4 +172,8 @@ void swDelay(char numLoops)
    	    while (i > 0)				// could also have used while (i)
 	       i--;
     }
+}
+
+char stringConverter(float tempNum) {
+    char str[4] = tempNum;
 }

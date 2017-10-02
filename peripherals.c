@@ -249,3 +249,48 @@ __interrupt void TIMER1_A0_ISR (void)
 	// Not sure where Timer A1 is configured?
 	Sharp96x96_SendToggleVCOMCommand();  // display needs this toggle < 1 per sec
 }
+
+void initADC() {
+
+    REFCTL0 &= ~REFMSTR;    // Reset REFMSTR to hand over control of
+                                 // internal reference voltages to
+                     // ADC12_A control registers
+
+    ADC12CTL0 = ADC12SHT0_9 | ADC12REFON | ADC12ON | ADC12MSC;     // Internal ref = 1.5V
+
+    ADC12CTL1 = ADC12SHP | ADC12CSTARTADD_0 | ADC12CONSEQ_1;                     // Enable sample timer
+
+    //set up the scroll wheel
+    ADC12MCTL1 = ADC12REF_0 | ADC12TNCH_0 | ADC12EOS;
+    P3SEL |= (BIT5);
+
+    //Temperature sensor
+    ADC12MCTL0 = ADC12SREF_1 + ADC12INCH_10;
+    P6SEL |= (BIT0);
+
+    //enable interrupts
+    ADC12IE = ADC12IE0 | ADC12IE1;
+    _BIS_SR(GIE);
+
+
+    //__delay_cycles(100);                    // delay to allow Ref to settle
+    //ADC12CTL0 |= ADC12ENC;              // Enable conversion
+
+         // Use calibration data stored in info memory
+    //bits30 = CALADC12_15V_30C;
+    //bits85 = CALADC12_15V_85C;
+    //degC_per_bit = ((float)(85.0 - 30.0))/((float)(bits85-bits30));
+
+
+         //while(1)
+         //{
+           //ADC12CTL0 &= ~ADC12SC;  // clear the start bit
+           //ADC12CTL0 |= ADC12SC;       // Sampling and conversion start
+                               // Single conversion (single channel)
+
+        //}
+}
+
+void readADC() {
+
+}
