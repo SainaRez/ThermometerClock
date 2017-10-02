@@ -48,27 +48,27 @@ __interrupt void ADC12_ISR()
     CheckADC = 1;
 }
 
-while(1) {
-    if (sample == 1) {
-        tempArray[circIndex] = currentTemp;
-        ScrollArray[circIndex] = swVolt;
-        sample = 0;
-        if (circIndex == 255) {
-            int average = tempArray[251] + tempArray[252] + tempArray[253] + tempArray[254] + tempArray[255];
-        }
-        temperatureDegC = (float)((long)in_temp - CALADC12_15V_30C) * degC_per_bit +30.0;
-
-        Graphics_clearDisplay(&g_sContext);
-        Graphics_drawStringCentered(&g_sContext, "HI", AUTO_STRING_LENGTH, 48, 35, TRANSPARENT_TEXT);
-        Graphics_flushBuffer(&g_sContext);
-    }
-}
 
 
 // Main
 void main(void)
 
 {
+    while(1) {
+        if (sample == 1) {
+            tempArray[circIndex] = currentTemp;
+            ScrollArray[circIndex] = swVolt;
+            sample = 0;
+            if (circIndex == 255) {
+                int average = tempArray[251] + tempArray[252] + tempArray[253] + tempArray[254] + tempArray[255];
+            }
+            temperatureDegC = (float)((long)in_temp - CALADC12_15V_30C) * degC_per_bit +30.0;
+
+            Graphics_clearDisplay(&g_sContext);
+            Graphics_drawStringCentered(&g_sContext, "HI", AUTO_STRING_LENGTH, 48, 35, TRANSPARENT_TEXT);
+            Graphics_flushBuffer(&g_sContext);
+        }
+    }
     //unsigned char ret_val = 0x0F;
     unsigned char currKey=0, dispSz = 3;
     unsigned char dispThree[3];
