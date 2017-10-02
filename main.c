@@ -107,7 +107,7 @@ void main(void)
     // Write some text to the display
     Graphics_drawStringCentered(&g_sContext, "Welcome", AUTO_STRING_LENGTH, 48, 15, TRANSPARENT_TEXT);
     Graphics_drawStringCentered(&g_sContext, "to", AUTO_STRING_LENGTH, 48, 25, TRANSPARENT_TEXT);
-    Graphics_drawStringCentered(&g_sContext, "ECE2049!", AUTO_STRING_LENGTH, 48, 35, TRANSPARENT_TEXT);
+    Graphics_drawStringCentered(&g_sContext, "Lab3", AUTO_STRING_LENGTH, 48, 35, TRANSPARENT_TEXT);
 
     // Draw a box around everything
     Graphics_Rectangle box = {.xMin = 5, .xMax = 91, .yMin = 5, .yMax = 91 };
