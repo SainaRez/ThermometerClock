@@ -65,6 +65,8 @@ void main(void)
     volatile float degC_per_bit;
     volatile unsigned int bits30, bits85;
     degC_per_bit = ((float)(85.0 - 30.0))/((float)(bits85-bits30));
+    unsigned char celsius[5];
+    unsigned char farenheit[5];
 
     initLeds();
     configDisplay();
@@ -86,19 +88,22 @@ void main(void)
             temperatureDegC = (float)((long)average - CALADC12_15V_30C) * degC_per_bit +30.0;
             temperatureDegF = temperatureDegC * 1.8 + 32;
 
+            float_to_string(temperatureDegC, celsius);
+            float_to_string(temperatureDegF, farenheit);
+
             //char celsius[] = stringconverter(temperatureDegC);
             //char* farenheit[] = stringconverter(temperatureDegF);
-            //char celciusDeg[] = {celsius[0],celsius[1],celsius[2],celsius[3],celsius[4],'C'};
+            //unsigned char celsiusDeg[] = {celsius[0],celsius[1],celsius[2],celsius[3],celsius[4],'C'};
             if ((circIndex % 5) == 0){
                 Graphics_clearDisplay(&g_sContext);
+                dateConverter(timer);
                 Graphics_drawStringCentered(&g_sContext, "Celsius:", AUTO_STRING_LENGTH, 38, 35, TRANSPARENT_TEXT);
-                //Graphics_drawStringCentered(&g_sContext, celsius, AUTO_STRING_LENGTH, 58, 35, TRANSPARENT_TEXT);
+                Graphics_drawStringCentered(&g_sContext, celsius, AUTO_STRING_LENGTH, 58, 45, TRANSPARENT_TEXT);
                 Graphics_drawStringCentered(&g_sContext, "Farenheit:", AUTO_STRING_LENGTH, 38, 55, TRANSPARENT_TEXT);
-                //Graphics_drawStringCentered(&g_sContext, stringConverter(temperatureDegF), AUTO_STRING_LENGTH, 58, 55, TRANSPARENT_TEXT);
+                Graphics_drawStringCentered(&g_sContext, farenheit, AUTO_STRING_LENGTH, 58, 65, TRANSPARENT_TEXT);
                 Graphics_flushBuffer(&g_sContext);
             }
         }
-        dateConverter(timer);
         BuzzerOnNote(swVolt);
     }
     //unsigned char ret_val = 0x0F;
@@ -192,8 +197,67 @@ void dateConverter(long int total) {
     hour = (total - ((long)days * 86400))/3600;
     minute = (total - ((long)days * 86400)-(hour * 3600))/60;
     second = total - ((long)days * 86400)-(hour * 3600)-(minute * 60);
+    unsigned char date[16] = {(char)month[0],(char)month[1],(char)month[2],'-',(dayOf/10)+48,(dayOf%10)+48,' ',(hour/10)+48,(hour%10)+48,':',(minute/10)+48,(minute%10)+48,':',(second/10)+48,(second%10)+48,'\0'};
     //int date[] = {}
-    Graphics_clearDisplay(&g_sContext);
-    //Graphics_drawStringCentered(&g_sContext, date, AUTO_STRING_LENGTH, 48, 25, TRANSPARENT_TEXT);
-    Graphics_flushBuffer(&g_sContext);
+    //Graphics_clearDisplay(&g_sContext);
+    Graphics_drawStringCentered(&g_sContext, date, AUTO_STRING_LENGTH, 48, 15, TRANSPARENT_TEXT);
+    //Graphics_flushBuffer(&g_sContext);
+}
+
+
+/***Convert float to string***/
+void float_to_string(float f, char r[])
+{
+    long long int length, length2, i, number, position, sign;
+    float number2;
+
+    sign = -1;   // -1 == positive number
+    if (f < 0)
+    {
+        sign = '-';
+        f *= -1;
+    }
+
+
+    number2 = f;
+    number = f;
+    length = 0;  // size of decimal part
+    length2 = 0; //  size of tenth
+
+    /* calculate length2 tenth part*/
+    while( (number2 - (float)number) != 0.0 && !((number2 - (float)number) < 0.0) )
+    {
+         number2 = f * (n_tu(10.0, length2 + 1));
+         number = number2;
+
+         length2++;
+    }
+
+    /* calculate length decimal part*/
+    for(length = (f > 1) ? 0 : 1; f > 1; length++)
+        f /= 10;
+
+    position = length;
+    length = length + 1 + length2;
+    number = number2;
+    if(sign == '-')
+    {
+        length++;
+        position++;
+    }
+
+    for(i = length; i >= 0 ; i--)
+    {
+        if(i == (length))
+            r[i] = '\0';
+        else if(i == (position))
+            r[i] = '.';
+        else if(sign == '-' && i == 0)
+            r[i] = '-';
+        else
+        {
+            r[i] = (number % 10) + '0';
+            number /=10;
+        }
+    }
 }
