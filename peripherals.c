@@ -77,6 +77,10 @@ void setLeds(unsigned char state)
     P6OUT |= mask;
 }
 
+void ledOff() {
+    P6OUT &= ~(BIT4|BIT3|BIT2|BIT1);
+}
+
 
 /*
  * Enable a PWM-controlled buzzer on P3.5

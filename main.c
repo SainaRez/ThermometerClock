@@ -12,6 +12,7 @@
 #include "peripherals.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define CALADC12_15V_30C  *((unsigned int *)0x1A1A)
 #define CALADC12_15V_85C  *((unsigned int *)0x1A1C)
@@ -19,6 +20,9 @@
 // Function Prototypes
 void swDelay(char numLoops);
 char* stringConverter(float printNum);
+char* stringConverter(float printNum);
+void A2_timer();
+
 
 //Global Variables
 unsigned long int timer;
@@ -30,7 +34,6 @@ unsigned int scrollArray[256];
 int checkADC = -1;
 
 #pragma vector = TIMER2_A0_VECTOR
-
 __interrupt void A2_ISRs() {
     timer++;
     circIndex++; //circular index
@@ -55,7 +58,7 @@ __interrupt void ADC12_ISR()
 void main(void)
 {
     WDTCTL = WDTPW | WDTHOLD;       // Stop watchdog timer
-       //_BIS_SR(GIE);
+       _BIS_SR(GIE);
 
     volatile float temperatureDegF;
     volatile float temperatureDegC;
@@ -63,18 +66,22 @@ void main(void)
     volatile unsigned int bits30, bits85;
     degC_per_bit = ((float)(85.0 - 30.0))/((float)(bits85-bits30));
 
-    Graphics_clearDisplay(&g_sContext);
-    Graphics_drawStringCentered(&g_sContext, "Rain Rain", AUTO_STRING_LENGTH, 38, 35, TRANSPARENT_TEXT);
-    Graphics_drawStringCentered(&g_sContext, "Go Away", AUTO_STRING_LENGTH, 38, 55, TRANSPARENT_TEXT);
-    Graphics_flushBuffer(&g_sContext);
-  /*  while(1) {
+    initLeds();
+    configDisplay();
+    initADC();
+    A2_timer();
+    setLeds(15);
+    swDelay(5);
+    ledOff();
+
+    while(1) {
         if (checkADC == 1) {
             tempArray[circIndex] = currentTemp;
             scrollArray[circIndex] = swVolt;
             checkADC = 0;
             int average = 0;
             if (circIndex >= 5) {
-                average = tempArray[circIndex-4] + tempArray[circIndex-3] + tempArray[circIndex-2] + tempArray[circIndex-1] + tempArray[circIndex];
+                average = (tempArray[circIndex-4] + tempArray[circIndex-3] + tempArray[circIndex-2] + tempArray[circIndex-1] + tempArray[circIndex])/5;
             }
             temperatureDegC = (float)((long)average - CALADC12_15V_30C) * degC_per_bit +30.0;
             temperatureDegF = temperatureDegC * 1.8 + 32;
@@ -82,12 +89,14 @@ void main(void)
             //char celsius[] = stringconverter(temperatureDegC);
             //char* farenheit[] = stringconverter(temperatureDegF);
             //char celciusDeg[] = {celsius[0],celsius[1],celsius[2],celsius[3],celsius[4],'C'};
-            Graphics_clearDisplay(&g_sContext);
-            Graphics_drawStringCentered(&g_sContext, "Celsius:", AUTO_STRING_LENGTH, 38, 35, TRANSPARENT_TEXT);
-            //Graphics_drawStringCentered(&g_sContext, celsius, AUTO_STRING_LENGTH, 58, 35, TRANSPARENT_TEXT);
-            Graphics_drawStringCentered(&g_sContext, "Farenheit:", AUTO_STRING_LENGTH, 38, 55, TRANSPARENT_TEXT);
-            //Graphics_drawStringCentered(&g_sContext, stringConverter(temperatureDegF), AUTO_STRING_LENGTH, 58, 55, TRANSPARENT_TEXT);
-            Graphics_flushBuffer(&g_sContext);
+            if ((circIndex % 5) == 0){
+                Graphics_clearDisplay(&g_sContext);
+                Graphics_drawStringCentered(&g_sContext, "Celsius:", AUTO_STRING_LENGTH, 38, 35, TRANSPARENT_TEXT);
+                //Graphics_drawStringCentered(&g_sContext, celsius, AUTO_STRING_LENGTH, 58, 35, TRANSPARENT_TEXT);
+                Graphics_drawStringCentered(&g_sContext, "Farenheit:", AUTO_STRING_LENGTH, 38, 55, TRANSPARENT_TEXT);
+                //Graphics_drawStringCentered(&g_sContext, stringConverter(temperatureDegF), AUTO_STRING_LENGTH, 58, 55, TRANSPARENT_TEXT);
+                Graphics_flushBuffer(&g_sContext);
+            }
         }
         dateConverter(timer);
         BuzzerOnNote(swVolt);
@@ -105,12 +114,6 @@ void main(void)
     //unsigned char name[14] = "Your Name Here"; // What happens when you change the array length?
                                         // What should it be?
 
-    unsigned int somethingFun = 0x2121;
-
-    WDTCTL = WDTPW | WDTHOLD;       // Stop watchdog timer
-
-    initLeds();
-    configDisplay();*/
 }
 
 
