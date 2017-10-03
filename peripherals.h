@@ -72,6 +72,7 @@ void setupSPI_DAC(void);
 void configDisplay(void);
 void BuzzerOn(void);
 void BuzzerOff(void);
+void BuzzerOnNote(swVolt);
 
 void configKeypad(void);
 unsigned char getKey(void);

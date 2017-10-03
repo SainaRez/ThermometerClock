@@ -103,6 +103,28 @@ void BuzzerOn(void)
     TB0CCR5   = TB0CCR0/2;                  // Configure a 50% duty cycle
 }
 
+void BuzzerOnNote(int pitch)
+{
+    // Initialize PWM output on P3.5, which corresponds to TB0.5
+    P3SEL |= BIT5; // Select peripheral output mode for P3.5
+    P3DIR |= BIT5;
+
+    TB0CTL  = (TBSSEL__ACLK|ID__1|MC__UP);  // Configure Timer B0 to use ACLK, divide by 1, up mode
+    TB0CTL  &= ~TBIE;                       // Explicitly Disable timer interrupts for safety
+
+    // Now configure the timer period, which controls the PWM period
+    // Doing this with a hard coded values is NOT the best method
+    // We do it here only as an example. You will fix this in Lab 2.
+    TB0CCR0   = 32768/pitch;                    // Set the PWM period in ACLK ticks
+    TB0CCTL0 &= ~CCIE;                  // Disable timer interrupts
+
+    // Configure CC register 5, which is connected to our PWM pin TB0.5
+    TB0CCTL5  = OUTMOD_7;                   // Set/reset mode for PWM
+    TB0CCTL5 &= ~CCIE;                      // Disable capture/compare interrupts
+    TB0CCR5   = TB0CCR0/2;                  // Configure a 50% duty cycle
+}
+
+
 /*
  * Disable the buzzer on P7.5
  */
@@ -261,7 +283,7 @@ void initADC() {
     ADC12CTL1 = ADC12SHP | ADC12CSTARTADD_0 | ADC12CONSEQ_1;                     // Enable sample timer
 
     //set up the scroll wheel
-    ADC12MCTL1 = ADC12REF_0 | ADC12TNCH_0 | ADC12EOS;
+    ADC12MCTL1 = ADC12SREF_0 | ADC12INCH_0 | ADC12EOS;
     P3SEL |= (BIT5);
 
     //Temperature sensor
@@ -272,25 +294,5 @@ void initADC() {
     ADC12IE = ADC12IE0 | ADC12IE1;
     _BIS_SR(GIE);
 
-
-    //__delay_cycles(100);                    // delay to allow Ref to settle
-    //ADC12CTL0 |= ADC12ENC;              // Enable conversion
-
-         // Use calibration data stored in info memory
-    //bits30 = CALADC12_15V_30C;
-    //bits85 = CALADC12_15V_85C;
-    //degC_per_bit = ((float)(85.0 - 30.0))/((float)(bits85-bits30));
-
-
-         //while(1)
-         //{
-           //ADC12CTL0 &= ~ADC12SC;  // clear the start bit
-           //ADC12CTL0 |= ADC12SC;       // Sampling and conversion start
-                               // Single conversion (single channel)
-
-        //}
 }
 
-void readADC() {
-
-}
