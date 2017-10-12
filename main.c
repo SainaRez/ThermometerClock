@@ -20,21 +20,25 @@
 // Function Prototypes
 void swDelay(char numLoops);
 char* stringConverter(float printNum);
-char* stringConverter(float printNum);
 void A2_timer();
+int intToStr(int x, char str[], int d);
+void ftoa(float n, char *res, int afterpoint);
+//void reverse(char *str, int len);
+
 
 
 //Global Variables
-unsigned long int timer;
-char circIndex = 255;
-unsigned int currentTemp = 0;
-unsigned int swVolt = 0;
+volatile unsigned long int timer;
+volatile unsigned char circIndex = 200;
+volatile unsigned int currentTemp = 0;
+volatile unsigned int swVolt = 0;
 unsigned int tempArray[256];
 unsigned int scrollArray[256];
 int checkADC = -1;
+char strVal[5];
 
 #pragma vector = TIMER2_A0_VECTOR
-__interrupt void A2_ISRs() {
+__interrupt void TIMER_A2_ISR(void) {
     timer++;
     circIndex++; //circular index
     ADC12CTL0 |= ADC12ENC | ADC12SC; //enables and starts conversion
@@ -58,7 +62,7 @@ __interrupt void ADC12_ISR()
 void main(void)
 {
     WDTCTL = WDTPW | WDTHOLD;       // Stop watchdog timer
-       _BIS_SR(GIE);
+    _BIS_SR(GIE);
 
     volatile float temperatureDegF;
     volatile float temperatureDegC;
@@ -82,29 +86,52 @@ void main(void)
             scrollArray[circIndex] = swVolt;
             checkADC = 0;
             int average = 0;
+            char temp[24];
+
             if (circIndex >= 5) {
                 average = (tempArray[circIndex-4] + tempArray[circIndex-3] + tempArray[circIndex-2] + tempArray[circIndex-1] + tempArray[circIndex])/5;
             }
             temperatureDegC = (float)((long)average - CALADC12_15V_30C) * degC_per_bit +30.0;
             temperatureDegF = temperatureDegC * 1.8 + 32;
 
-            float_to_string(temperatureDegC, celsius);
-            float_to_string(temperatureDegF, farenheit);
+            //sprintf(temp, " %d.%d C / %d.%d F ", (int)temperatureDegC, (int)((temperatureDegC - (int)temperatureDegC) * 10),
+                         //(int)temperatureDegF, (int)((temperatureDegF - (int)temperatureDegF) * 10));
+
+
+            char* c = stringConverter(temperatureDegC);
+            char celsius[10] = c;
+            // Copy from ptr to array.
+            strcpy(celsius, c);
+            //printf("%s\n", celsius);
+
+            //float_to_string(temperatureDegC, celsius);
+            //float_to_string(temperatureDegF, farenheit);
 
             //char celsius[] = stringconverter(temperatureDegC);
             //char* farenheit[] = stringconverter(temperatureDegF);
             //unsigned char celsiusDeg[] = {celsius[0],celsius[1],celsius[2],celsius[3],celsius[4],'C'};
-            if ((circIndex % 5) == 0){
-                Graphics_clearDisplay(&g_sContext);
+           //if ((circIndex % 5) == 0){
+               Graphics_clearDisplay(&g_sContext);
                 dateConverter(timer);
                 Graphics_drawStringCentered(&g_sContext, "Celsius:", AUTO_STRING_LENGTH, 38, 35, TRANSPARENT_TEXT);
                 Graphics_drawStringCentered(&g_sContext, celsius, AUTO_STRING_LENGTH, 58, 45, TRANSPARENT_TEXT);
-                Graphics_drawStringCentered(&g_sContext, "Farenheit:", AUTO_STRING_LENGTH, 38, 55, TRANSPARENT_TEXT);
-                Graphics_drawStringCentered(&g_sContext, farenheit, AUTO_STRING_LENGTH, 58, 65, TRANSPARENT_TEXT);
+                //Graphics_drawStringCentered(&g_sContext, "Farenheit:", AUTO_STRING_LENGTH, 38, 55, TRANSPARENT_TEXT);
+                //Graphics_drawStringCentered(&g_sContext, farenheit, AUTO_STRING_LENGTH, 58, 65, TRANSPARENT_TEXT);
                 Graphics_flushBuffer(&g_sContext);
-            }
+           // }
         }
-        BuzzerOnNote(swVolt);
+        int ButtonNum = readButton();
+        int buzzerOn = 0; //it is off
+        if (ButtonNum == 8) {
+            BuzzerOnNote(swVolt);
+            buzzerOn = 1;
+        }
+        if (buzzerOn == 1) {
+            BuzzerOnNote(swVolt);
+        }
+        if (ButtonNum == 4)
+            BuzzerOff();
+            buzzerOn = 0;
     }
     //unsigned char ret_val = 0x0F;
     unsigned char currKey=0, dispSz = 3;
@@ -135,8 +162,10 @@ void swDelay(char numLoops)
 }
 
 char* stringConverter(float printNum) {
-    char str[5];
-    itoa(printNum, str[4], 10);
+
+    ftoa(printNum, &strVal, 10);
+    return &strVal;
+
 }
 
 void dateConverter(long int total) {
@@ -259,5 +288,67 @@ void float_to_string(float f, char r[])
             r[i] = (number % 10) + '0';
             number /=10;
         }
+    }
+}
+
+//// reverses a string 'str' of length 'len'
+//void reverse(char *str, int len)
+//{
+//    int i=0, j=len-1, temp;
+//    while (i<j)
+//    {
+//        temp = str[i];
+//        str[i] = str[j];
+//        str[j] = temp;
+//        i++; j--;
+//    }
+//}
+
+
+// Converts a given integer x to string str[].  d is the number
+// of digits required in output. If d is more than the number
+// of digits in x, then 0s are added at the beginning.
+int intToStr(int x, char str[], int d)
+{
+   int i = 0;
+   while (x)
+   {
+       str[i++] = (x%10) + '0';
+       x = x/10;
+   }
+
+   // If number of digits required is more, then
+   // add 0s at the beginning
+   while (i < d)
+       str[i++] = '0';
+
+   reverse(str, i);
+   str[i] = '\0';
+   return i;
+}
+
+// Converts a floating point number to string.
+void ftoa(float n, char *res, int afterpoint)
+{
+    // Extract integer part
+    int ipart = (int)n;
+
+    // Extract floating part
+    float fpart = n - (float)ipart;
+
+    // convert integer part to string
+    int i = intToStr(ipart, res, 0);
+
+    // check for display option after point
+    if (afterpoint != 0)
+    {
+        res[i] = '.';  // add dot
+
+        // Get the value of fraction part upto given no.
+        // of points after dot. The third parameter is needed
+        // to handle cases like 233.007
+        fpart = fpart * pow(10, afterpoint);
+
+        intToStr((int)fpart, res + i + 1, afterpoint);
     }
 }
